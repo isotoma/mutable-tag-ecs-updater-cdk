@@ -1,12 +1,14 @@
 {
     "name": "mutable-tag-ecs-updater",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "scripts": {
         "build": "tsc",
         "watch": "tsc -w",
-        "test": "jest"
+        "test": "jest",
+        "lint": "eslint --ext .js,.ts .",
+        "format": "prettier --ignore-path .gitignore --write \"**/*+(ts|json)\""
     },
     "devDependencies": {
         "@types/jest": "^29.4.0",
