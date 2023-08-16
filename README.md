@@ -2,6 +2,8 @@
 
 Updates ECS image tags based on GHCR package versions.
 
-This custom resource creates takes an ECS service and updates the version of a task container image when a package is updated in Github Code Repository.
+This CDK construct creates a Lambda that takes an ECS Service and updates the Task Container image if a package tag has been updated in Github Code Repository.
+
+It also creates a rule to invoke this lambda at regular intervals.
 
 ## Example
