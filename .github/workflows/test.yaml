@@ -23,6 +23,6 @@ jobs:
     - name: Test Construct
       run: npm run test
     - name: Lint Lambda
-      run: (cd ./lambda && npm run lint-check)
+      run: cd lambda && npm run lint-check
     - name: Test Lambda
-      run: (cd ./lambda && npm run test)
+      run: cd lambda && npm run test
