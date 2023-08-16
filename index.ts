@@ -20,8 +20,8 @@ export class MutableTagEcsUpdater extends Construct {
     constructor(scope: Construct, id: string, props: MutableTagEcsUpdaterProps) {
         super(scope, id);
 
-        const autoUpdateLambda = new lambdanodejs.NodejsFunction(this, 'AutoUpdateLambda', {
-            entry: pathlib.join(__dirname, './lambda/mutable-tag-ecs-updater.ts'),
+        const tagUpdateLambda = new lambdanodejs.NodejsFunction(this, 'AutoUpdateLambda', {
+            entry: pathlib.join(__dirname, './lambda/index.js'),
             environment: {
                 ECS_CLUSTER_NAME: props.ecsCluster.clusterName,
                 ECS_SERVICE_NAME: props.ecsService.serviceName,
@@ -34,23 +34,24 @@ export class MutableTagEcsUpdater extends Construct {
 
         const autoUpdateRule = new events.Rule(this, 'AutoUpdateRule', {
             schedule: events.Schedule.rate(Duration.parse(props.autoUpdateRate ?? 'PT5M')),
-            targets: [new eventsTargets.LambdaFunction(autoUpdateLambda)],
+            targets: [new eventsTargets.LambdaFunction(tagUpdateLambda)],
         });
 
-        props.pullSecret.grantRead(autoUpdateLambda);
-        autoUpdateLambda.addToRolePolicy(
+        props.pullSecret.grantRead(tagUpdateLambda);
+
+        tagUpdateLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 actions: ['ecs:DescribeServices', 'ecs:UpdateService'],
                 resources: [props.ecsService.serviceArn],
             }),
         );
-        autoUpdateLambda.addToRolePolicy(
+        tagUpdateLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 actions: ['ecs:ListTasks'],
                 resources: ['*'],
             }),
         );
-        autoUpdateLambda.addToRolePolicy(
+        tagUpdateLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 actions: ['ecs:DescribeTasks'],
                 resources: [
@@ -67,7 +68,7 @@ export class MutableTagEcsUpdater extends Construct {
             }),
         );
 
-        for (const resource of [autoUpdateLambda, autoUpdateRule]) {
+        for (const resource of [tagUpdateLambda, autoUpdateRule]) {
             Tags.of(resource).add('Component', 'AutoUpdate');
         }
     }

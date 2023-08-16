@@ -1,12 +1,7 @@
-# Welcome to your CDK TypeScript Construct Library project
+# mutable-tag-ecs-updater-cdk
 
-You should explore the contents of this project. It demonstrates a CDK Construct Library that includes a construct (`MutableTagEcsUpdater`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+Updates ECS image tags based on GHCR package versions.
 
-The construct defines an interface (`MutableTagEcsUpdaterProps`) to configure the visibility timeout of the queue.
+This custom resource creates takes an ECS service and updates the version of a task container image when a package is updated in Github Code Repository.
 
-## Useful commands
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
+## Example

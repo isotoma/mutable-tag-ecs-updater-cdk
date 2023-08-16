@@ -1,95 +1,7 @@
-import * as AWS from 'aws-sdk';
-import fetch from 'node-fetch';
+import * as ecs from '@aws-sdk/client-ecs';
+import * as secretsmanager from '@aws-sdk/client-secrets-manager';
 
-const hasKey = <K extends string>(key: K, obj: unknown): obj is { [_ in K]: Record<string, unknown> } => {
-    return typeof obj === 'object' && !!obj && key in obj;
-};
-
-const isArrayOfStrings = (arr: unknown): arr is string[] => {
-    if (!Array.isArray(arr)) {
-        return false;
-    }
-
-    for (const item of arr) {
-        if (typeof item !== 'string') {
-            return false;
-        }
-    }
-    return true;
-};
-
-interface GhcrDockerImage {
-    org: string;
-    repository: string;
-    tag: string;
-}
-
-const selectDate = (d1: Date | undefined, d2: Date | undefined, oldest: boolean): Date | undefined => {
-    if (d1) {
-        if (d2) {
-            if (oldest) {
-                if (d1.getTime() < d2.getTime()) {
-                    return d1;
-                }
-                return d2;
-            }
-            if (d1.getTime() > d2.getTime()) {
-                return d1;
-            }
-            return d2;
-        }
-        return d1;
-    }
-    if (d2) {
-        return d2;
-    }
-    return undefined;
-};
-
-const oldestDate = (d1: Date | undefined, d2: Date | undefined): Date | undefined => {
-    return selectDate(d1, d2, true);
-};
-
-const newestDate = (d1: Date | undefined, d2: Date | undefined): Date | undefined => {
-    return selectDate(d1, d2, false);
-};
-
-const parseImage = (image: string): GhcrDockerImage | undefined => {
-    const prefix = 'ghcr.io/';
-    if (!image.startsWith(prefix)) {
-        return undefined;
-    }
-
-    const withoutRegistry = image.substring(prefix.length);
-
-    const tagSplitParts = withoutRegistry.split(':');
-
-    const [orgAndRepository, tag] = tagSplitParts;
-
-    if (!orgAndRepository) {
-        return undefined;
-    }
-    if (!tag) {
-        return undefined;
-    }
-
-    const orgAndRepositorySplitParts = orgAndRepository.split('/');
-
-    const [org, repository] = orgAndRepositorySplitParts;
-
-    if (!repository) {
-        return undefined;
-    }
-    if (!org) {
-        return undefined;
-    }
-
-    return {
-        org,
-        repository,
-        tag,
-    };
-};
+import * as utils from './utils';
 
 class SecretsManagerMemoryCache {
     protected _ttlSeconds: number | undefined;
@@ -137,15 +49,11 @@ class SecretsManagerMemoryCache {
             typeof this.lastAccessed === 'undefined' ||
             new Date().getTime() - this.lastAccessed.getTime() > ttlSeconds * 1000
         ) {
-            const secretsmanager = new AWS.SecretsManager();
+            const smclient = new secretsmanager.SecretsManager();
             const accessedAt = new Date();
             console.log(`Retrieving secret value from ${secretName}`);
             const value = (
-                await secretsmanager
-                    .getSecretValue({
-                        SecretId: secretName,
-                    })
-                    .promise()
+                await smclient.getSecretValue({ SecretId: secretName })
             ).SecretString;
 
             if (typeof value !== 'string') {
@@ -193,7 +101,7 @@ export const handler = async (): Promise<HandlerResponse> => {
     const githubTokenRaw = await ghcrPullSecretCache.getValue();
     const githubTokenParsed: unknown = JSON.parse(githubTokenRaw);
 
-    if (!hasKey('password', githubTokenParsed)) {
+    if (!utils.hasKey('password', githubTokenParsed)) {
         console.error(`JSON from secret ${ghcrPullSecretName} missing required key 'password'`);
         return {
             success: false,
@@ -210,14 +118,12 @@ export const handler = async (): Promise<HandlerResponse> => {
         };
     }
 
-    const ecs = new AWS.ECS();
+    const ecsclient = new ecs.ECS();
 
-    const servicesResponse = await ecs
-        .describeServices({
-            cluster: ecsClusterName,
-            services: [ecsServiceName],
-        })
-        .promise();
+    const servicesResponse = await ecsclient.describeServices({
+        cluster: ecsClusterName,
+        services: [ecsServiceName],
+    })
 
     const service = (servicesResponse.services ?? [])[0];
 
@@ -241,25 +147,21 @@ export const handler = async (): Promise<HandlerResponse> => {
     }
 
     const taskArns = (
-        await ecs
-            .listTasks({
-                cluster: ecsClusterName,
-                desiredStatus: 'RUNNING',
-                serviceName: ecsServiceName,
-            })
-            .promise()
+        await ecsclient.listTasks({
+            cluster: ecsClusterName,
+            desiredStatus: 'RUNNING',
+            serviceName: ecsServiceName,
+        })
     ).taskArns;
 
     if (!taskArns) {
         throw new Error('No task ARNs found');
     }
 
-    const tasksResponse = await ecs
-        .describeTasks({
-            cluster: ecsClusterName,
-            tasks: taskArns,
-        })
-        .promise();
+    const tasksResponse = await ecsclient.describeTasks({
+        cluster: ecsClusterName,
+        tasks: taskArns,
+    })
 
     const imagesInUse = new Set<string>();
 
@@ -272,19 +174,20 @@ export const handler = async (): Promise<HandlerResponse> => {
             }
         }
 
-        oldestTaskCreatedAt = oldestDate(oldestTaskCreatedAt, task.createdAt);
+        oldestTaskCreatedAt = utils.oldestDate(oldestTaskCreatedAt, task.createdAt);
     }
 
     let newestImageCreatedAt: Date | undefined = undefined;
 
     for (const image of imagesInUse) {
-        const parsedImage = parseImage(image);
+        const parsedImage = utils.parseImage(image);
         if (!parsedImage) {
             console.error(`Skipping unparsable image: ${image}`);
             continue;
         } else {
             console.log(`Handling image: ${image}`);
         }
+        // @ts-expect-error fetch is not recognised as a valid global.
         const response = await fetch(`https://api.github.com/orgs/${parsedImage.org}/packages/container/${parsedImage.repository}/versions`, {
             headers: {
                 Accept: 'application/vnd.github+json',
@@ -300,27 +203,27 @@ export const handler = async (): Promise<HandlerResponse> => {
         }
 
         for (const item of responseJson) {
-            if (!hasKey('metadata', item)) {
+            if (!utils.hasKey('metadata', item)) {
                 console.error('Skipping image record from Github, has no metadata');
                 continue;
             }
             const metadata = item.metadata;
-            if (!hasKey('container', metadata)) {
+            if (!utils.hasKey('container', metadata)) {
                 console.error('Skipping image record from Github, has no metadata.container');
                 continue;
             }
             const metadataContainer = metadata.container;
-            if (!hasKey('tags', metadataContainer)) {
+            if (!utils.hasKey('tags', metadataContainer)) {
                 console.error('Skipping image record from Github, has no metadata.container.tags');
                 continue;
             }
             const metadataContainerTags = metadataContainer.tags;
-            if (!isArrayOfStrings(metadataContainerTags)) {
+            if (!utils.isArrayOfStrings(metadataContainerTags)) {
                 console.error('Skipping image record from Github, metadata.container.tags is not an array of strings');
                 continue;
             }
 
-            if (!hasKey('created_at', item)) {
+            if (!utils.hasKey('created_at', item)) {
                 console.error('Skipping image record from Github, has no created_at');
                 continue;
             }
@@ -333,7 +236,7 @@ export const handler = async (): Promise<HandlerResponse> => {
             }
 
             if (metadataContainerTags.includes(parsedImage.tag)) {
-                newestImageCreatedAt = newestDate(newestImageCreatedAt, new Date(createdAt));
+                newestImageCreatedAt = utils.newestDate(newestImageCreatedAt, new Date(createdAt));
                 break;
             }
         }
@@ -367,17 +270,15 @@ export const handler = async (): Promise<HandlerResponse> => {
             };
         }
         console.log('But ALWAYS_UPDATE was set, so updating anyway');
+    } else {
+        console.log('Oldest task is older than newest image, need to update');
     }
 
-    console.log('Oldest task is older than newest image, need to update');
-
-    await ecs
-        .updateService({
-            cluster: ecsClusterName,
-            service: ecsServiceName,
-            forceNewDeployment: true,
-        })
-        .promise();
+    await ecsclient.updateService({
+        cluster: ecsClusterName,
+        service: ecsServiceName,
+        forceNewDeployment: true,
+    })
 
     console.log(`Updated service ${ecsServiceName} in cluster ${ecsClusterName}`);
     return {

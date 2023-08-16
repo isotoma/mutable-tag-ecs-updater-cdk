@@ -1,8 +1,36 @@
+# Typescript
 *.js
-!jest.config.js
 *.d.ts
-node_modules
+_old/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# No build
+build/
+
+# Allow jest config
+!jest.config.js
+
+# Allow linting config
+!.eslintrc.js
+!.prettierrc.js
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directory
+node_modules/
+
+# Optional npm cache directory
+.npm
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# dotenv environment variables file
+.env
+.env.test
