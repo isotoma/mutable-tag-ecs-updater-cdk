@@ -1,6 +1,6 @@
 {
     "name": "mutable-tag-ecs-updater-cdk",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Updates ECS image tags based on GHCR package versions.",
     "license": "MIT",
     "author": {
