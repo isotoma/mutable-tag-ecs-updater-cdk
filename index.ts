@@ -27,7 +27,7 @@ export class MutableTagEcsUpdater extends Construct {
             environment: {
                 ECS_CLUSTER_NAME: props.ecsCluster.clusterName,
                 ECS_SERVICE_NAME: props.ecsService.serviceName,
-                GHCR_PULL_SECRET: props.pullSecret.secretName,
+                GHCR_PULL_SECRET_NAME: props.pullSecret.secretName,
                 GHCR_PULL_SECRET_CACHE_SECONDS_TTL: String(Duration.days(1).toSeconds()),
             },
             memorySize: 512,
