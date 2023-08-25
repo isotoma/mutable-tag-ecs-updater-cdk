@@ -1,6 +1,12 @@
 ### Changelog
 
+#### [v1.3.1](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.3.0...v1.3.1)
+
+- use correct envvar for GHCR secret [`5c40931`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/5c40931b3df494d53f67e3911f6f4b630647e2b9)
+
 #### [v1.3.0](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.2.0...v1.3.0)
+
+> 25 August 2023
 
 - use Node 18 for global fetch [`ebfbca0`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/ebfbca022dadbb0c03a38dca55bd2b5a96363392)
 
