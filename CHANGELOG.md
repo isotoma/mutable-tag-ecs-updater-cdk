@@ -1,6 +1,12 @@
 ### Changelog
 
+#### [v1.3.0](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.2.0...v1.3.0)
+
+- use Node 18 for global fetch [`ebfbca0`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/ebfbca022dadbb0c03a38dca55bd2b5a96363392)
+
 #### [v1.2.0](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.1.0...v1.2.0)
+
+> 25 August 2023
 
 - use Lambda Function not NodejsFunction [`dd309d9`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/dd309d940a334f3521bc72e3e8a5d7b4b7cd4ec8)
 - remove vscode settings [`068f391`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/068f391e76c860f13a716dbd7e6a9eff3af3b5c6)
