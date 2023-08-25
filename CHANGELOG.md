@@ -1,6 +1,13 @@
 ### Changelog
 
+#### [v1.2.0](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.1.0...v1.2.0)
+
+- use Lambda Function not NodejsFunction [`dd309d9`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/dd309d940a334f3521bc72e3e8a5d7b4b7cd4ec8)
+- remove vscode settings [`068f391`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/068f391e76c860f13a716dbd7e6a9eff3af3b5c6)
+
 #### [v1.1.0](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/compare/v1.0.2...v1.1.0)
+
+> 25 August 2023
 
 - define Construct params as interfaces [`7875066`](https://github.com/isotoma/mutable-tag-ecs-updater-cdk/commit/78750660e1124c2dac6e29ecab83ab18220aa2d5)
 
