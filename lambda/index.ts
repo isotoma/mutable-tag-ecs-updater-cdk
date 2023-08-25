@@ -187,7 +187,7 @@ export const handler = async (): Promise<HandlerResponse> => {
         } else {
             console.log(`Handling image: ${image}`);
         }
-        // @ts-expect-error fetch is not recognised as a valid global.
+
         const response = await fetch(`https://api.github.com/orgs/${parsedImage.org}/packages/container/${parsedImage.repository}/versions`, {
             headers: {
                 Accept: 'application/vnd.github+json',
