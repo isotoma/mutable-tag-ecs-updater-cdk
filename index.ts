@@ -9,9 +9,9 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface MutableTagEcsUpdaterProps {
-    ecsCluster: ecs.Cluster;
-    ecsService: ecs.BaseService;
-    pullSecret: secretsmanager.Secret;
+    ecsCluster: ecs.ICluster;
+    ecsService: ecs.IBaseService;
+    pullSecret: secretsmanager.ISecret;
     autoUpdateRate?: string;
     clusterStack?: Stack;
 }
