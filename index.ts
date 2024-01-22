@@ -1,5 +1,5 @@
 import * as pathlib from 'path';
-import { Stack, Tags, Duration, Arn } from 'aws-cdk-lib';
+import { Stack, Duration, Arn } from 'aws-cdk-lib';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
@@ -33,7 +33,7 @@ export class MutableTagEcsUpdater extends Construct {
             memorySize: 512,
         });
 
-        const autoUpdateRule = new events.Rule(this, 'AutoUpdateRule', {
+        new events.Rule(this, 'AutoUpdateRule', {
             schedule: events.Schedule.rate(Duration.parse(props.autoUpdateRate ?? 'PT5M')),
             targets: [new eventsTargets.LambdaFunction(tagUpdateLambda)],
         });
@@ -68,9 +68,5 @@ export class MutableTagEcsUpdater extends Construct {
                 ],
             }),
         );
-
-        for (const resource of [tagUpdateLambda, autoUpdateRule]) {
-            Tags.of(resource).add('Component', 'AutoUpdate');
-        }
     }
 }
