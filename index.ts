@@ -1,5 +1,5 @@
 import * as pathlib from 'path';
-import { Stack, Duration, Arn } from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
@@ -13,7 +13,6 @@ export interface MutableTagEcsUpdaterProps {
     ecsService: ecs.IBaseService;
     pullSecret: secretsmanager.ISecret;
     autoUpdateRate?: string;
-    clusterStack?: Stack;
 }
 
 export class MutableTagEcsUpdater extends Construct {
@@ -28,13 +27,13 @@ export class MutableTagEcsUpdater extends Construct {
                 ECS_CLUSTER_NAME: props.ecsCluster.clusterName,
                 ECS_SERVICE_NAME: props.ecsService.serviceName,
                 GHCR_PULL_SECRET_NAME: props.pullSecret.secretName,
-                GHCR_PULL_SECRET_CACHE_SECONDS_TTL: String(Duration.days(1).toSeconds()),
+                GHCR_PULL_SECRET_CACHE_SECONDS_TTL: String(cdk.Duration.days(1).toSeconds()),
             },
             memorySize: 512,
         });
 
         new events.Rule(this, 'AutoUpdateRule', {
-            schedule: events.Schedule.rate(Duration.parse(props.autoUpdateRate ?? 'PT5M')),
+            schedule: events.Schedule.rate(cdk.Duration.parse(props.autoUpdateRate ?? 'PT5M')),
             targets: [new eventsTargets.LambdaFunction(tagUpdateLambda)],
         });
 
@@ -52,19 +51,22 @@ export class MutableTagEcsUpdater extends Construct {
                 resources: ['*'],
             }),
         );
+
+        const clusterArnParts = cdk.Arn.split(props.ecsCluster.clusterArn, cdk.ArnFormat.SLASH_RESOURCE_NAME);
+        const clusterTasksArn = cdk.Arn.format(
+            {
+                ...clusterArnParts,
+                resource: 'task',
+                resourceName: `${clusterArnParts.resourceName}/*`,
+            },
+        );
+
         tagUpdateLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 actions: ['ecs:DescribeTasks'],
                 resources: [
                     `${props.ecsService.serviceArn}/*`,
-                    Arn.format(
-                        {
-                            resource: 'task',
-                            service: 'ecs',
-                            resourceName: `${props.ecsCluster.clusterName}/*`,
-                        },
-                        props.clusterStack,
-                    ),
+                    clusterTasksArn,
                 ],
             }),
         );
