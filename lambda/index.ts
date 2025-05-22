@@ -188,7 +188,7 @@ export const handler = async (): Promise<HandlerResponse> => {
             console.log(`Handling image: ${image}`);
         }
 
-        const response = await fetch(`https://api.github.com/orgs/${parsedImage.org}/packages/container/${parsedImage.repository}/versions`, {
+        const response = await fetch(`https://api.github.com/orgs/${encodeURIComponent(parsedImage.org)}/packages/container/${encodeURIComponent(parsedImage.repository)}/versions`, {
             headers: {
                 Accept: 'application/vnd.github+json',
                 Authorization: `Bearer ${githubToken}`,
