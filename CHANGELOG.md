@@ -1,6 +1,20 @@
 ### Changelog
 
+#### [v1.5.1](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.5.0...v1.5.1)
+
+- Fix for image names containing slashes [`#15`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/15)
+
+#### [v1.5.0](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.4.0...v1.5.0)
+
+> 4 September 2024
+
+- Simplify props [`#11`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/11)
+- Bump @babel/traverse from 7.20.13 to 7.23.7 [`#10`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/10)
+- Bump version ready for release [`ce9e9c2`](https://github.com/isotoma/mutable-tag-ecs-updater/commit/ce9e9c265708fa8890cd7fc3be0d131f40e7b196)
+
 #### [v1.4.0](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.3.1...v1.4.0)
+
+> 22 January 2024
 
 - Do not set tags [`#8`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/8)
 - Stable CI check name [`#9`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/9)
