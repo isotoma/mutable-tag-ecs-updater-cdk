@@ -72,7 +72,8 @@ export const parseImage = (image: string): GhcrDockerImage | undefined => {
 
     const orgAndRepositorySplitParts = orgAndRepository.split('/');
 
-    const [org, repository] = orgAndRepositorySplitParts;
+    const [org, ...repositoryParts] = orgAndRepositorySplitParts;
+    const repository = repositoryParts.join('/');
 
     if (!repository) {
         return undefined;
