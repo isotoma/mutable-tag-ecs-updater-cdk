@@ -1,6 +1,12 @@
 ### Changelog
 
+#### [v1.6.0](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.5.2...v1.6.0)
+
+- Always update if no tasks running [`#17`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/17)
+
 #### [v1.5.2](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.5.1...v1.5.2)
+
+> 22 May 2025
 
 - Fix parsing of images with slashes [`#16`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/16)
 
