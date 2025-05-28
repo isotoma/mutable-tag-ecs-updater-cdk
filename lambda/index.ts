@@ -154,124 +154,125 @@ export const handler = async (): Promise<HandlerResponse> => {
         })
     ).taskArns;
 
-    if (!taskArns) {
-        throw new Error('No task ARNs found');
-    }
+    if (taskArns && taskArns.length > 0) {
+        const tasksResponse = await ecsclient.describeTasks({
+            cluster: ecsClusterName,
+            tasks: taskArns,
+        })
 
-    const tasksResponse = await ecsclient.describeTasks({
-        cluster: ecsClusterName,
-        tasks: taskArns,
-    })
+        const imagesInUse = new Set<string>();
 
-    const imagesInUse = new Set<string>();
+        let oldestTaskCreatedAt: Date | undefined = undefined;
 
-    let oldestTaskCreatedAt: Date | undefined = undefined;
+        for (const task of tasksResponse.tasks ?? []) {
+            for (const container of task.containers ?? []) {
+                if (container.image) {
+                    imagesInUse.add(container.image);
+                }
+            }
 
-    for (const task of tasksResponse.tasks ?? []) {
-        for (const container of task.containers ?? []) {
-            if (container.image) {
-                imagesInUse.add(container.image);
+            oldestTaskCreatedAt = utils.oldestDate(oldestTaskCreatedAt, task.createdAt);
+        }
+
+        let newestImageCreatedAt: Date | undefined = undefined;
+
+        for (const image of imagesInUse) {
+            const parsedImage = utils.parseImage(image);
+            if (!parsedImage) {
+                console.error(`Skipping unparsable image: ${image}`);
+                continue;
+            } else {
+                console.log(`Handling image: ${image}`);
+            }
+
+            const response = await fetch(`https://api.github.com/orgs/${encodeURIComponent(parsedImage.org)}/packages/container/${encodeURIComponent(parsedImage.repository)}/versions`, {
+                headers: {
+                    Accept: 'application/vnd.github+json',
+                    Authorization: `Bearer ${githubToken}`,
+                },
+            });
+
+            const responseJson: unknown = await response.json();
+
+            if (!Array.isArray(responseJson)) {
+                console.error('Response JSON from Github is not an array');
+                continue;
+            }
+
+            for (const item of responseJson) {
+                if (!utils.hasKey('metadata', item)) {
+                    console.error('Skipping image record from Github, has no metadata');
+                    continue;
+                }
+                const metadata = item.metadata;
+                if (!utils.hasKey('container', metadata)) {
+                    console.error('Skipping image record from Github, has no metadata.container');
+                    continue;
+                }
+                const metadataContainer = metadata.container;
+                if (!utils.hasKey('tags', metadataContainer)) {
+                    console.error('Skipping image record from Github, has no metadata.container.tags');
+                    continue;
+                }
+                const metadataContainerTags = metadataContainer.tags;
+                if (!utils.isArrayOfStrings(metadataContainerTags)) {
+                    console.error('Skipping image record from Github, metadata.container.tags is not an array of strings');
+                    continue;
+                }
+
+                if (!utils.hasKey('created_at', item)) {
+                    console.error('Skipping image record from Github, has no created_at');
+                    continue;
+                }
+
+                const createdAt = item.created_at;
+
+                if (typeof createdAt !== 'string') {
+                    console.error('Skipping image record from Github, created_at is not a string');
+                    continue;
+                }
+
+                if (metadataContainerTags.includes(parsedImage.tag)) {
+                    newestImageCreatedAt = utils.newestDate(newestImageCreatedAt, new Date(createdAt));
+                    break;
+                }
             }
         }
 
-        oldestTaskCreatedAt = utils.oldestDate(oldestTaskCreatedAt, task.createdAt);
-    }
+        console.log('Oldest task created at:', oldestTaskCreatedAt);
+        console.log('Newest image created at:', newestImageCreatedAt);
 
-    let newestImageCreatedAt: Date | undefined = undefined;
-
-    for (const image of imagesInUse) {
-        const parsedImage = utils.parseImage(image);
-        if (!parsedImage) {
-            console.error(`Skipping unparsable image: ${image}`);
-            continue;
-        } else {
-            console.log(`Handling image: ${image}`);
-        }
-
-        const response = await fetch(`https://api.github.com/orgs/${encodeURIComponent(parsedImage.org)}/packages/container/${encodeURIComponent(parsedImage.repository)}/versions`, {
-            headers: {
-                Accept: 'application/vnd.github+json',
-                Authorization: `Bearer ${githubToken}`,
-            },
-        });
-
-        const responseJson: unknown = await response.json();
-
-        if (!Array.isArray(responseJson)) {
-            console.error('Response JSON from Github is not an array');
-            continue;
-        }
-
-        for (const item of responseJson) {
-            if (!utils.hasKey('metadata', item)) {
-                console.error('Skipping image record from Github, has no metadata');
-                continue;
-            }
-            const metadata = item.metadata;
-            if (!utils.hasKey('container', metadata)) {
-                console.error('Skipping image record from Github, has no metadata.container');
-                continue;
-            }
-            const metadataContainer = metadata.container;
-            if (!utils.hasKey('tags', metadataContainer)) {
-                console.error('Skipping image record from Github, has no metadata.container.tags');
-                continue;
-            }
-            const metadataContainerTags = metadataContainer.tags;
-            if (!utils.isArrayOfStrings(metadataContainerTags)) {
-                console.error('Skipping image record from Github, metadata.container.tags is not an array of strings');
-                continue;
-            }
-
-            if (!utils.hasKey('created_at', item)) {
-                console.error('Skipping image record from Github, has no created_at');
-                continue;
-            }
-
-            const createdAt = item.created_at;
-
-            if (typeof createdAt !== 'string') {
-                console.error('Skipping image record from Github, created_at is not a string');
-                continue;
-            }
-
-            if (metadataContainerTags.includes(parsedImage.tag)) {
-                newestImageCreatedAt = utils.newestDate(newestImageCreatedAt, new Date(createdAt));
-                break;
-            }
-        }
-    }
-
-    console.log('Oldest task created at:', oldestTaskCreatedAt);
-    console.log('Newest image created at:', newestImageCreatedAt);
-
-    if (!oldestTaskCreatedAt) {
-        console.error('Unable to determine oldest task created at. Unable to proceed');
-        return {
-            success: false,
-            result: 'Unable to determine oldest task created at. Unable to proceed',
-        };
-    }
-
-    if (!newestImageCreatedAt) {
-        console.error('Unable to determine newest image created at. Unable to proceed');
-        return {
-            success: false,
-            result: 'Unable to determine newest image created at. Unable to proceed',
-        };
-    }
-
-    if (oldestTaskCreatedAt.getTime() > newestImageCreatedAt.getTime()) {
-        console.log('Oldest task newer than newest image, nothing to do');
-        if (!alwaysUpdate) {
+        if (!oldestTaskCreatedAt) {
+            console.error('Unable to determine oldest task created at. Unable to proceed');
             return {
-                success: true,
-                result: 'Oldest task newer than newest image, nothing to do',
+                success: false,
+                result: 'Unable to determine oldest task created at. Unable to proceed',
             };
         }
-        console.log('But ALWAYS_UPDATE was set, so updating anyway');
+
+        if (!newestImageCreatedAt) {
+            console.error('Unable to determine newest image created at. Unable to proceed');
+            return {
+                success: false,
+                result: 'Unable to determine newest image created at. Unable to proceed',
+            };
+        }
+
+        if (oldestTaskCreatedAt.getTime() > newestImageCreatedAt.getTime()) {
+            console.log('Oldest task newer than newest image, nothing to do');
+            if (!alwaysUpdate) {
+                return {
+                    success: true,
+                    result: 'Oldest task newer than newest image, nothing to do',
+                };
+            }
+            console.log('But ALWAYS_UPDATE was set, so updating anyway');
+        } else {
+            console.log('Oldest task is older than newest image, need to update');
+        }
     } else {
-        console.log('Oldest task is older than newest image, need to update');
+        // No tasks running, so we can update the service without checking the images
+        console.log('No tasks running, updating service without checking images');
     }
 
     await ecsclient.updateService({
