@@ -21,7 +21,7 @@ export class MutableTagEcsUpdater extends Construct {
 
         const tagUpdateLambda = new lambda.Function(this, 'AutoUpdateLambda', {
             code: lambda.Code.fromAsset(pathlib.join(__dirname, 'lambda')),
-            runtime: lambda.Runtime.NODEJS_18_X,
+            runtime: new lambda.Runtime('nodejs22.x', lambda.RuntimeFamily.NODEJS, { supportsInlineCode: true }),
             handler: 'index.handler',
             environment: {
                 ECS_CLUSTER_NAME: props.ecsCluster.clusterName,
