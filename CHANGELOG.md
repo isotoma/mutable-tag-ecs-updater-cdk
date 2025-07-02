@@ -1,6 +1,12 @@
 ### Changelog
 
+#### [v1.7.0](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.6.0...v1.7.0)
+
+- Upgrade Lambda runtime from 18 to 22 [`#18`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/18)
+
 #### [v1.6.0](https://github.com/isotoma/mutable-tag-ecs-updater/compare/v1.5.2...v1.6.0)
+
+> 28 May 2025
 
 - Always update if no tasks running [`#17`](https://github.com/isotoma/mutable-tag-ecs-updater/pull/17)
 
